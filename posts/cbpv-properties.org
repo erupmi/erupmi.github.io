@@ -1,0 +1,314 @@
+#+TITLE:  λ-Calculus Properties: A Call-By-Push-Value Case
+#+OPTIONS: tex:t
+#+HTML_MATHJAX: bussproofs cancel ams
+
+#+begin_export html
+<script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+</script>
+
+<script>
+window.MathJax = {
+  loader: {load: ['[tex]/bussproofs', '[tex]/ams']},
+  tex: {packages: {'[+]': ['bussproofs', 'ams']}}
+};
+</script>
+#+end_export
+
+* Introduction
+
+In this post, we will show the definitions and theorems of Call-By-Push-Value \lambda-Calculus (abbreviation: /CBPV/) by modifying from /Takahashi's method/.
+We assume you to be familiar with the reduction and /CEK/-machine of Call-By-Value λ-Calculus (abbreviation: /CBV/).
+
+* Definition
+
+** CBPV Syntax
+
+$\textbf{Definition 1 - CBPV Syntax}$: The term of Call-By-Push-Value is mutually defined as following:
+
+\begin{align*}
+\text{(values)}\ \textit{v}
+&= \textit{x}\ |\ \{\textit{c}\} \\
+
+\text{(computations)}\ \textit{c, s}
+&= \textbf{produce}\ \textit{v}\
+ |\ \lambda \textit{x}.\textit{c}\ |\ !\textit{v}\ |\ \textit{s}\ \textit{v}\
+ |\ \textbf{let}\ \textit{x} \leftarrow \textit{c}\ \textbf{in}\ \textit{s}
+\end{align*}
+
+We have two kinds of terms - values and computations:
+- $\textit{x}$ stands for the *free variable*,
+  so does all the $\textit{x}$ occuring in later context.
+- $\{\textit{c}\}$ stands for a *thunk*, a computation contains a computation.
+- $\textbf{produce}\ \textit{v}$ is a *produce* (known as *return* in some papers),
+  also a computation containts a computation.
+- $\lambda \textit{x}.\textit{c}$ is the *function* with argument $\textit{x}$ and computation $\textit{c}$.
+  Unlike /CBV/ where we say /function is a value/, function is a computation in /CBPV/.
+- $!\textit{v}$ is the term *force*, we use it to extra the computation inside *thunk*.
+- $\textit{s}\ \textit{v}$ is *application*, we apply a value into a function.
+- $\textbf{let}\ \textit{x} \leftarrow \textit{c}\ \textbf{in}\ \textit{s}$ is like *let* in /CBV/ at first glance (also known as *to* in original paper).
+  However, it's not a syntactic sugar for *application*.
+  It extracts $\textit{c}$, a *produce*, then do substitution as the free variable $\textit{x}$ in $\textit{s}$.
+
+$\textbf{Definition 2 - Normal Form}$: Normal forms includes /all/ the *values*, *produce*, and *function*.
+
+The /CBPV/ syntax looks like /CBV/ with extra fancy terms,
+we will see how it distinguishes from /CBV/ in the reduction definitions.
+
+** Reduction Strategies
+
+*** Strong Reduction
+
+$\textbf{Definition 3 - Strong Reduction}$: $\Rightarrow$ is defined as strong reduction:
+
+\begin{prooftree}
+\AxiomC{}
+\RightLabel{$\textit{SelfRed}$}
+\UnaryInfC{$M \Rightarrow M$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$M \Rightarrow N$}
+\RightLabel{$\textit{ThunkRed}$}
+\UnaryInfC{$\{M\} \Rightarrow \{N\}$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$M \Rightarrow N$}
+\RightLabel{$\textit{AbsRed}$}
+\UnaryInfC{$\lambda \textit{x}.M \Rightarrow \lambda \textit{x}.N$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$M \Rightarrow N$}
+\RightLabel{$\textit{ProduceRed}$}
+\UnaryInfC{$\textbf{produce}\ M \Rightarrow \textbf{produce}\ N$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$M \Rightarrow M'$}
+\AxiomC{$N \Rightarrow N'$}
+\RightLabel{$\textit{AppRed}_{1}$}
+\BinaryInfC{$\lambda \textit{x}.M\ N \Rightarrow M'[N'/x]$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$M \Rightarrow M'$}
+\AxiomC{$N \Rightarrow N'$}
+\RightLabel{$\textit{AppRed}_{2}$}
+\BinaryInfC{$M\ N \Rightarrow M'\ N'$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$M \Rightarrow N$}
+\RightLabel{$\textit{ForceRed}_{1}$}
+\UnaryInfC{$!\{M\} \Rightarrow N$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$M \Rightarrow N$}
+\RightLabel{$\textit{ForceRed}_{2}$}
+\UnaryInfC{$!M \Rightarrow !N$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$M \Rightarrow M'$}
+\AxiomC{$N \Rightarrow N'$}
+\RightLabel{$\textit{LetRed}_{1}$}
+\BinaryInfC{$\textbf{let}\ \textit{x} \leftarrow \textbf{produce}\ M\ \textbf{in}\ N
+             \Rightarrow M'[N'/x]$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$M \Rightarrow M'$}
+\AxiomC{$N \Rightarrow N'$}
+\RightLabel{$\textit{LetRed}_{2}$}
+\BinaryInfC{$\textbf{let}\ \textit{x} \leftarrow M\ \textbf{in}\ N
+             \Rightarrow
+             \textbf{let}\ \textit{x} \leftarrow M'\ \textbf{in}\ N'$}
+\end{prooftree}
+
+We will prove the strong reduction satisfies Church-Rosser theorem.
+For some theorems, this reduction is too strong to be induct directly.
+Therefore, we will further splits it into two cases: *Weak Head Reduction* and *Non Head Reduction*.
+
+*** Weak Head Reduction
+
+$\textbf{Definition 4 - Weak Head Reduction}$ (or weak reduction): $\rightsquigarrow$ is defined as weak head reduction, the \beta-reduction in /usual/ sense:
+
+\begin{prooftree}
+\AxiomC{$M \rightsquigarrow M'$}
+\RightLabel{$\textit{AppStep}_{1}$}
+\UnaryInfC{$\lambda \textit{x}.M\ N \rightsquigarrow M'[N/x]$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$M \rightsquigarrow M'$}
+\RightLabel{$\textit{AppStep}_{2}$}
+\UnaryInfC{$M\ N \rightsquigarrow M'\ N$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$M \rightsquigarrow N$}
+\RightLabel{$\textit{ForceStep}$}
+\UnaryInfC{$!\{M\} \rightsquigarrow N$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$M \rightsquigarrow M'$}
+\RightLabel{$\textit{LetStep}_{1}$}
+\UnaryInfC{$\textbf{let}\ \textit{x} \leftarrow \textbf{produce}\ M\ \textbf{in}\ N
+             \rightsquigarrow M'[N/x]$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$M \rightsquigarrow M'$}
+\RightLabel{$\textit{LetStep}_{2}$}
+\UnaryInfC{$\textbf{let}\ \textit{x} \leftarrow M\ \textbf{in}\ N
+             \rightsquigarrow
+             \textbf{let}\ \textit{x} \leftarrow M'\ \textbf{in}\ N$}
+\end{prooftree}
+
+The *Weak Head Reduction* reduces terms to *normal form*.
+
+Now we can see the difference between /CBPV/ and /CBV/ by the weak reduction rules.
+Assume we add a rule for number addition:
+
+\begin{align*}
+\text{(values)}\ \textit{v}, \textit{t} &= \textit{x}\ |\ \{\textit{c}\}\
+ |\ \mathbb{N}\ |\ \textit{v} \oplus \textit{t}
+\end{align*}
+
+We will have an addition rule (the $+$ is the semantic of plus):
+
+\begin{prooftree}
+\AxiomC{}
+\RightLabel{$\textit{PlusStep}$}
+\UnaryInfC{$M \oplus N \rightsquigarrow (M + N)$}
+\end{prooftree}
+
+Since both $M$ and $N$ are already values, we don't need to further evaluate them.
+We can get the result directly.
+In /CBV/, however, the $M$ and $N$ might not be in normal form,
+which requires to evaluate both to a number first.
+For example, in $(1\oplus2)\oplus3$, the $\square \oplus 3$ will be push to call stack;
+and $1\oplus2$ is evaluated.
+
+To rewrite the example in /CBPV/, it should be:
+$\textbf{let}\ \textit{x} \leftarrow \textbf{produce}\ (1\oplus2)\ \textbf{in}\ \textbf{produce}\ (\textit{x} \oplus 3)$
+or $(\lambda\ \textit{x}. \textbf{produce} (\textit{x} \oplus 3))\ (1\oplus2)$.
+Therefore, we can see that /CBPV/ explicitly distinguish continuations in the *application* and *let* operators.
+
+*** Non Head Reduction
+
+$\textbf{Definition 5 - Non Head Reduction}$: $\twoheadrightarrow$ is defined as non head reduction:
+
+\begin{prooftree}
+\AxiomC{}
+\RightLabel{$\textit{SelfNonH}$}
+\UnaryInfC{$M \twoheadrightarrow M$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$M \Rightarrow N$}
+\RightLabel{$\textit{ThunkNonH}$}
+\UnaryInfC{$\{M\} \twoheadrightarrow \{N\}$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$M \Rightarrow N$}
+\RightLabel{$\textit{AbsNonH}$}
+\UnaryInfC{$\lambda \textit{x}.M \twoheadrightarrow \textit{x}.N$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$M \Rightarrow N$}
+\RightLabel{$\textit{ProduceNonH}$}
+\UnaryInfC{$\textbf{produce}\ M \twoheadrightarrow \textbf{produce}\ N$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$M \twoheadrightarrow M'$}
+\AxiomC{$N \Rightarrow N'$}
+\RightLabel{$\textit{AppNonH}$}
+\BinaryInfC{$M\ N \twoheadrightarrow M'\ N'$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$M \Rightarrow N$}
+\RightLabel{$\textit{ForceNonH}$}
+\UnaryInfC{$!\{M\} \twoheadrightarrow !\{N\}$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$M \twoheadrightarrow M'$}
+\AxiomC{$N \Rightarrow N'$}
+\RightLabel{$\textit{LetNonH}$}
+\BinaryInfC{$\textbf{let}\ \textit{x} \leftarrow M\ \textbf{in}\ N
+             \twoheadrightarrow
+             \textbf{let}\ \textit{x} \leftarrow M'\ \textbf{in}\ N'$}
+\end{prooftree}
+
+Unlike *Weak Head Reduction*, which only reduces from the outermost normal form,
+the *Non Head Reduction* preserves the outermost normal form;
+and only strongly reduces inside the normal form.
+The two reductions act like the complementary of *Strong Reduction*.
+
+Once we figured out the definitions, the proving is easy.
+
+** Reflexive Transitive Closure for Reductions
+
+*Definition 6 - Reflexive Transitive Closure*:
+We define $R^{*}$ to be the /reflexive/ /transitive/ closure for relation $R$.
+So we have $a\ R^{*}\ a$, $a\ R\ b \to a\ R^{*}\ b$, and $a\ R^{*}\ b \to b\ R^{*}\ c \to a\ R^{*}\ c$.
+Then we have following notations:
+
+- $\Rightarrow^{*}$: reflexive transitive reduction
+- $\rightsquigarrow^{*}$: reflexive transitive weak-head reduction
+- $\twoheadrightarrow^{*}$: reflexive transitive non-head reduction
+
+** Examples
+
+If you find reading the reduction rules confusing,
+you can check the example in [[https://www.cs.bham.ac.uk/~pbl/papers/thesisqmwphd.pdf][Levy's thesis]] and the source code of available CBPV implementations.
+
+* Takahashi's method for CBPV
+
+This is adapted from /Takahashi's method of Standardization/.
+We show some important lemmas and properties of /CBPV/.
+Proof is omitted, but you can find a Coq version proof [[https://github.com/AxiomCrisis/eval-strategy][here]].
+
+** Parallel Reduction
+
+- *Lemma 1.1*: $M \Rightarrow M' \to N \Rightarrow N' \to M[N/x] \Rightarrow M'[N'/x]$
+- *Lemma 1.2*: $M \rightsquigarrow M' \to M[N/x] \Rightarrow M'[N/x]$
+- *Lemma 1.3*: $M \twoheadrightarrow M' \to N \twoheadrightarrow N' \to M[N/x] \twoheadrightarrow M'[N'/x]$
+
+It's an essential lemma for substitution.
+*Lemma 1.2* is not like *1.1* and *1.3*, because weak head reduction can only reduce on the outermost term.
+Once the free variables inside a term are replaced, only strong reduction and non-head reduction can reduce it.
+
+** Reduction Relations
+
+We will see the relations of different reduction strategies.
+
+- *Lemma 2.1*: $M \Rightarrow M' \to \exists N, M \rightsquigarrow^{*} N \land N \twoheadrightarrow M'$. This is one of most important lemma telling us a strong reduction can be decomposed by multiple weak head reduction and a non head reduction.
+- *Lemma 2.2*: $M \twoheadrightarrow N \to N \rightsquigarrow P \to \exists N, M \rightsquigarrow O \land O \Rightarrow P$. It's a helper lemma to prove *2.4*.
+- *Corollary 2.3*: $M \Rightarrow^{*} M \to \exists N, M \rightsquigarrow^{*} N \land N \twoheadrightarrow^{*} M'$. Immediate from the previous two lemmas.
+- *Corollary 2.4*: $M \twoheadrightarrow N \to N \rightsquigarrow P \to \exists N, M \rightsquigarrow^{*} O \land O \Rightarrow P$. This lemma helps us to exchange the head reduction and non-head reduction order.
+
+** Church Rosser Theorem
+
+Church-Rosser Theorem, also known as the confluence property of \lambda-Calculus,
+states that applying the *strong* \beta-reduction rules to \lambda-Calculus in different ways
+will not change the results of the reduction. Formally:
+
+\[ M \Rightarrow^{*} N \to M \Rightarrow^{*} N' \to \exists O, N \Rightarrow^{*} O \land N \Rightarrow^{*} O \].
+
+* Coq Formalization
+
+[[https://github.com/erupmi/utlc-eval-proof][Here]] is a formalized proof in Coq in both CBPV in CBV.
+
+* References
+
+1. [[https://www.cs.cmu.edu/~crary/papers/2009/standard.pdf][A Simple Proof of Call-by-Value Standardization]]
+2. [[https://www.ps.uni-saarland.de/Publications/documents/ForsterEtAl_2018_Call-By-Push-Value.pdf][Call-By-Push-Value in Coq: Operational, Equational, and Denotational Theory]]

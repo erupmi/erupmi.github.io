@@ -1,0 +1,84 @@
+#+TITLE: Writing an Emacs minor mode for Agda
+
+* Introduction
+
+When I was writing Agda, I found it inconvinient to find out the unicode character by calling out =describe-input-method= everytime. Thus, I decide to implement a minor mode to echo the typing method of the character in the minibuffer region.
+
+* Understand the Baisc Layout of a Minor Mode
+
+Basically an Emacs minor modes need to contain this to clarify Emacs to load a new minor mode:
+#+begin_src elisp
+  ;;;###autoload
+  (define-minor-mode agda-symbol-helper-mode
+    "Show the typing of an Agda unicode symbol in minibuffer"
+    :lighter " agda-symbol-helper")
+
+  (provide 'agda-symbol-helper-mode)
+#+end_src
+
+The =###autoload= tells emacs to automaticaly evaluate the definition instead of requiring users to manually load it. For example, if we want to add certain hooks to trigger the minor mode in a major mode, then the magic comment could help us.
+
+The last one is =provide=, which should be common in your Emacs configuration, it helps Emacs to load this file.
+
+* Implementing More Utilities
+
+We want to find the typing method of every unknown unicode characters, so the first thing to do is getting current character by =char-after=. Then, we send the character to =quail-find-key= to get the input method. Of course, we do not have to print the typing method of every character since those in keyboard are clear and direct, which requires us to do some filtering based on ASCII code:
+#+begin_src elisp
+  (require 'dash)
+
+  (defun mu-agda-unicode-input-helper ()
+    "Get the current unicode input method."
+    (interactive)
+    (let* ((current-char (char-after)))
+      ;; check if the char is in typable ascii range
+      (unless (and (>= current-char 32) (<= current-char 126))
+        (let ((output-msg
+               (--reduce (format "%s, %s" acc it)
+                         (quail-find-key current-char))))
+          (message (format "Type: %s in Agda" output-msg))))))
+#+end_src
+
+The =interacitve= function clarify we can call it by =M-x=. =quail-find-key= will return a list of possible input method, then we use a function =--reduce= (recall it in every funcional programming introduction) in /dash/ library to collect them into a new string. Finally, we could give a user friendly alert by =message=.
+
+Nevertheless, it's only the first step. We also need to consider the case that the cursor is moved then a new character should be displayed. A new varaible is required to memorize the location of the cursor:
+#+begin_src elisp
+  (defvar mu-agda-last-post-command-position 0
+  "Holds the cursor position fromthe last run of post-command-hooks.")
+
+  (make-variable-buffer-local 'mu-agda-last-post-command-position)
+#+end_src
+
+=make-varaible-buffer-local= is crucial because it guaranteens the variable isolated even when we switch to another buffer. Then, we can save the current cursor location. Once it's changed, we echo the typing method for the new character:
+#+begin_src elisp
+  (defun mu-agda-unciode-helper-if-moved-hook ()
+    "Output unicode input method if I moved."
+    (let ((pos (point)))
+      ;; boundary check
+      (when (and (not (equal pos mu-agda-last-post-command-position))
+                 (not (eobp)) (not (eolp)))
+        (mu-agda-unicode-input-helper)
+        (setq last-post-command-position pos))))
+#+end_src
+
+The =eobp= and =eolp= correspond to the beginning and ending of the buffer. We want to do a boundary check to avoid showing out of bound character.
+
+In addition, we want to know when cursor moved. We add the function to =post-command-hook= which will trigger after we typed or moved:
+#+begin_src elisp
+   (add-to-list 'post-command-hook #'mu-agda-unciode-helper-if-moved-hook)
+#+end_src
+
+The last step is to set a toggle for this mode, =agda-symbol-helper-mode= is also a boolean to check whether is turn on or off:
+#+begin_src elisp
+  ;;;###autoload
+  (define-minor-mode agda-symbol-helper-mode
+    "Show the typing of an Agda unicode symbol in minibuffer"
+    :lighter " agda-symbol-helper"
+
+    (if agda-symbol-helper-mode
+        (add-to-list 'post-command-hook #'mu-agda-unciode-helper-if-moved-hook)
+      (setq post-command-hook (remove 'mu-agda-unciode-helper-if-moved-hook post-command-hook))))
+#+end_src
+
+* Conclusion
+
+It's quite easy to implement this if you are familliar with lisp. The full code is in [[https://github.com/erupmi/agda-symbol-helper-mode][my GitHub repo]].

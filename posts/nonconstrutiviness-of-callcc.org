@@ -1,0 +1,59 @@
+* Why is =call/cc= nonconstructive
+
+We know that =call/cc= corresponds to Peirce Law =((α → β) → α) → α=, which implies double negations of classical logic.
+Then we may ask: don't we implement =call/cc= in the computer(e.g. through CEK machine)?
+Isn't it a contradiction that =call/cc= is not constructive by Curry-Howard Isomorphism?
+
+** Implementation
+
+From the implementation perspective, =call/cc= (as a primitive) is implemented through an abstract machine to manipulate control flow.
+It cannot be implemented with substitution only operation.
+So, it's different from all other constructive logical operations.
+
+** Violation of Church-Rosser Theorem
+
+Here's an example from [[https://stackoverflow.com/questions/9050725/call-cc-implementation][stakcoverflow]] where =call/cc= breaks the Church-Rosser theorem:
+#+begin_src
+(define (f c)
+  ;; by confluence the next two can execute in arbitrary order
+  (+ (c 2) (c 3)))
+
+(call/cc f)
+#+end_src
+
+In an imperative language like *C* you cannot swap the /evaluation order/ of =return= arbitrarily to get the same result, even though it's fine in do notation of Haskell's monad (many people actually suggest to use =pure= instead of =return= in Haskell to avoid confusions).
+=call/cc= breaks the control flow like =return=, so we cannot swap the order of evaluation as stated in Church-Rosser theorem.
+If we switch the order of plus, we get different results (2 for the left evaluation first, 3 for the right first).
+Therefore we could not use it as a deductive system, since sequent calculus and natural deduction should follow Church_rosser theorem, which is a prerequsite for normalizations.
+
+** How About Continuation Passing Style
+
+We know that =call/cc= can be translated to continuation passing style.
+A tautology from classical logic with double negation transform is also a tautology provable in intuitionistic logic.
+The above example will be translated to following by CPS:
+#+begin_src
+(define (f c* k)
+  (c* 2 (lambda (x)
+       	c* 3 (lambda (y)
+               	(k (+ x y))))))
+#+end_src
+
+Without the magical blackbox, we define =call/cc= as =(lambda (f cc) (f (lambda (x k) (cc x)) cc))=.
+It's still confluent(equivalent to Church-Rosser theorem) because the CPS process will /assume/ a correct calling order for us.
+When we call =(call/cc f (lambda (x) (x)))=, it applys user defined =cc= and abandons the previous frames =k=.
+You can imagine continuation passing style as explicitly inserting user-defined functions on control frames,
+as a result, users may modify all the control behaviours.
+Therefore, we could preserve the Church-Rosser Theorem while manipulating the frame under CPS.
+Again, it's still different from the primitive operation version of =call/cc=.
+
+** Conclusion
+
+From a computation perspective, reduction is more likely to be implemented in weak reduction.
+However, it's necessary to think on the strong reduction for proof system.
+The minor difference under Curry-Howard isomorphism causes missing interpreation from different perspective.
+A more precise statement would be: "We could not implement a primitive =call/cc= operation which guarantees Church-Rosser Properties".
+
+** Related Things
+
+You may also be interested in /Call-by-Push-Value/ in terms of how to understand value and computation.
+
