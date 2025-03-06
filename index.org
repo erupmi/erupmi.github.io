@@ -9,16 +9,16 @@ I am Erika Tse.
 ** Posts
 
 *** [[./posts/borges-aleph-comment.html][关于阿莱夫的后后记]]
-*** [[./posts/misc-diary-1.html][杂（一）]]
 *** [[./posts/nonconstrutiviness-of-callcc.html][Why is call/cc nonconstructive?]]
 *** [[./posts/writing-an-emacs-minor-mode.html][Writing an Emacs Minor Mode for Agda]]
 *** [[./posts/cbpv-properties.html][λ-Calculus Properties: a Call-By-Push-Value Case]]
 *** [[./posts/webkit-exploitation.html][WebKit Exploitation Tutorial]]
 
+** Diaries
+
+*** [[./posts/misc-diary-1.html][杂（一）]]
+
+
 ** Notes
 
 *** ...
-
-** Links
-
-- [[https://github.com/erupmi][GitHub]]
