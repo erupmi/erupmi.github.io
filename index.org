@@ -3,12 +3,13 @@
 I am Erika Tse.
 
 #+begin_quote
-Veni, Creator, imple quae tu creasti pectora superna gratia.
+יהוה בחכמה יסד־ארץ כונן שמים בתבונה
 #+end_quote
 
 ** Posts
 
 *** [[./posts/borges-aleph-comment.html][关于阿莱夫的后后记]]
+*** [[./posts/misc-diary-1.html][杂（一）]]
 *** [[./posts/nonconstrutiviness-of-callcc.html][Why is call/cc nonconstructive?]]
 *** [[./posts/writing-an-emacs-minor-mode.html][Writing an Emacs Minor Mode for Agda]]
 *** [[./posts/cbpv-properties.html][λ-Calculus Properties: a Call-By-Push-Value Case]]
